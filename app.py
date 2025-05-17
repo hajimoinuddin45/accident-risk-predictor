@@ -49,36 +49,31 @@ if st.button("Predict"):
     st.subheader(f"🛑 Predicted Risk: **{severity_map[pred_class]}**")
     st.write({severity_map[i]: f"{probs[i]*100:.1f} %" for i in range(len(probs))})
 
-    # Inline SHAP bar for this single instance
+    # --- Inline SHAP bar for this single instance -----------------------------
     with st.spinner("Calculating local feature explanations…"):
-        # Background data for KernelExplainer
-        background = X_scaled
 
-        # Create explainer
-        explainer = shap.KernelExplainer(model.predict, background)
+        # ❶ Build a small background set for KernelExplainer
+        background = shap.sample(X_scaled, 50, random_state=0)
 
-        # Compute SHAP values for all samples in X_scaled (you can reduce nsamples for speed)
+        explainer = shap.KernelExplainer(model.predict_proba, background)
+
+        # ❷ SHAP values → list of arrays (one per class)
         shap_values = explainer.shap_values(X_scaled, nsamples=100)
 
-        # For multi-class, shap_values is a list; for single output, it's an array
-        # Adjust class_index and sample_index as needed
-        class_index = 0
+        # Pick the SHAP vector for *this* sample and the predicted class
         sample_index = 0
+        class_index  = pred_class            # focus on the predicted severity
 
-        # Extract SHAP values for one sample and class
-        if isinstance(shap_values, list):
-            single_shap_values = shap_values[class_index][sample_index]
-        else:
-            single_shap_values = shap_values[sample_index]
+        sv = shap_values[class_index][sample_index]      # shape (n_features,)
 
-        # Plot SHAP bar plot
+        # ❸ Wrap in a Series so labels appear
+        sv_series = pd.Series(sv, index=feature_names, name="SHAP value")
+
+        # ❹ Bar plot – return value is a matplotlib figure
         fig = shap.plots.bar(
-            single_shap_values,
-            feature_names=feature_names,
+            sv_series,
             max_display=8,
-            show=False
+            show=False          # don’t auto‑display
         )
 
-        # Display in Streamlit
-        st.pyplot(fig)        # pass the figure to Streamlit
-
+        st.pyplot(fig)
