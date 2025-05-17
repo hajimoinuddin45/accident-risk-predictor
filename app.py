@@ -51,9 +51,20 @@ if st.button("Predict"):
 
     # Inline SHAP bar for this single instance
     with st.spinner("Calculating local feature explanations…"):
-        explainer = shap.KernelExplainer(model.predict, X_scaled)  # 1‑row bg
-        shap_values = explainer.shap_values(X_scaled)
-        shap_bar = shap.bar_plot(shap_values[0][0], feature_names,
-                                 show=False, max_display=8)
-        plt.tight_layout()
-        st.pyplot(shap_bar)
+        # Use the same single row as background — fast enough
+        background = X_scaled
+        explainer = shap.KernelExplainer(model.predict, background)
+
+        # Explain just this one row
+        shap_values = explainer.shap_values(X_scaled, nsamples=100)
+
+        # Draw a bar plot and get the figure object
+        fig = shap.bar_plot(
+            shap_values[0][0],        # SHAP values for this row
+            feature_names,            # labels
+            show=False,
+            max_display=8             # top 8 factors
+        )
+
+        st.pyplot(fig)               # display in Streamlit
+     # pass figure to Streamlit
