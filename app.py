@@ -51,19 +51,34 @@ if st.button("Predict"):
 
     # Inline SHAP bar for this single instance
     with st.spinner("Calculating local feature explanations…"):
-        # Use the single input row as background
+        # Background data for KernelExplainer
         background = X_scaled
+
+        # Create explainer
         explainer = shap.KernelExplainer(model.predict, background)
 
-        # Explain this one row
+        # Compute SHAP values for all samples in X_scaled (you can reduce nsamples for speed)
         shap_values = explainer.shap_values(X_scaled, nsamples=100)
 
-        # --- BAR PLOT ---
-        fig = shap.bar_plot(          # returns a Matplotlib figure
-            shap_values[0][0],        # SHAP values for this row
-            feature_names,            # labels
-            show=False,
-            max_display=8
+        # For multi-class, shap_values is a list; for single output, it's an array
+        # Adjust class_index and sample_index as needed
+        class_index = 0
+        sample_index = 0
+
+        # Extract SHAP values for one sample and class
+        if isinstance(shap_values, list):
+            single_shap_values = shap_values[class_index][sample_index]
+        else:
+            single_shap_values = shap_values[sample_index]
+
+        # Plot SHAP bar plot
+        fig = shap.plots.bar(
+            single_shap_values,
+            feature_names=feature_names,
+            max_display=8,
+            show=False
         )
-        st.pyplot(fig)                # pass the figure to Streamlit
+
+        # Display in Streamlit
+        st.pyplot(fig)        # pass the figure to Streamlit
 
