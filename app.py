@@ -53,7 +53,7 @@ if st.button("Predict"):
     with st.spinner("Calculating local feature explanations…"):
         explainer = shap.KernelExplainer(model.predict, X_scaled)  # 1‑row bg
         shap_values = explainer.shap_values(X_scaled)
-        shap_bar = shap.bar_plot(shap_values[pred_class][0], feature_names,
+        shap_bar = shap.bar_plot(shap_values[0][0], feature_names,
                                  show=False, max_display=8)
         plt.tight_layout()
         st.pyplot(shap_bar)
