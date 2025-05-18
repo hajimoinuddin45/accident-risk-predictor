@@ -79,7 +79,7 @@ if st.button("Predict"):
         # 4️⃣ Use legacy bar_plot (less picky about types)
         plt.tight_layout()
         shap.bar_plot(
-            sv,
+             sv.tolist(),
             feature_names=feature_names,
             max_display=8,
             show=False  # disable SHAP’s own plt.show()
