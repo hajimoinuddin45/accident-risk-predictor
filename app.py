@@ -71,10 +71,19 @@ if st.button("Predict"):
         shap_values = explainer.shap_values(X_scaled, nsamples=100)
 
         # 3️⃣ Pull vector for this sample & class (binary vs multi)
-        if isinstance(shap_values, list):          # multi‑class
-            sv = shap_values[pred_class][0]        # (n_features,)
-        else:                                      # binary
-            sv = shap_values[0]                    # (n_features,)
+        if isinstance(shap_values, list):               # classic multi‑class
+            sv = shap_values[pred_class][0]             # (n_features,)
+        else:                                           # array path
+            raw = shap_values[0]                        # could be 1‑D, 2‑D, or 3‑D
+
+            if raw.ndim == 1:                           # (n_features,)
+                sv = raw
+            elif raw.ndim == 2:                         # (n_features, n_classes)
+                sv = raw[:, pred_class]
+            elif raw.ndim == 3:                         # (n_samples, n_features, n_classes)
+                sv = raw[:, :, pred_class].squeeze()
+            else:
+                raise ValueError(f"Unexpected SHAP shape: {raw.shape}")                   # (n_features,)
 
         # 4️⃣ Build a Series, take top‑8 |value| features
         sv_series = (
