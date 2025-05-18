@@ -65,32 +65,24 @@ if st.button("Predict"):
 
         # 1️⃣ Build a small background sample for KernelExplainer
         background = shap.sample(X_scaled, 50, random_state=0)
-        def predict_proba_fn(x):
-            # Keras returns a tf‑tensor; convert to numpy
-            return model.predict(x)
-        explainer = shap.KernelExplainer(lambda x: model.predict(x), background)
+        explainer  = shap.KernelExplainer(lambda x: model.predict(x), background)
 
-        # 2️⃣ SHAP values (list, one array per class)
+        # 2️⃣ SHAP values
         shap_values = explainer.shap_values(X_scaled, nsamples=100)
 
-        # 3️⃣ Select the SHAP vector for this sample & class
-        if isinstance(shap_values, list):
-            # multi‑class → pick the array for the predicted class
-            sv = shap_values[pred_class][0]          # (n_features,)
-            base_val = explainer.expected_value[pred_class]
-        else:
-            # binary → shap_values is already the array we want
-            sv = shap_values[0]                      # (n_features,)
-            base_val = explainer.expected_value
+        # 3️⃣ Pull the SHAP vector we need, binary or multi‑class
+        if isinstance(shap_values, list):          # multi‑class
+                sv = shap_values[pred_class][0]        # (n_features,)
+        else:                                      # binary
+            sv = shap_values[0]                    # (n_features,)
 
-        # 4️⃣ Wrap in Explanation so feature labels survive
-        expl = shap.Explanation(
-            values=sv,
-            base_values=base_val,
-            data=values[0],
-            feature_names=feature_names
+        # 4️⃣ Use legacy bar_plot (less picky about types)
+        plt.tight_layout()
+        shap.bar_plot(
+            sv,
+            feature_names=feature_names,
+            max_display=8,
+            show=False  # disable SHAP’s own plt.show()
         )
-
-        # 5️⃣ Plot — works for both cases
-        fig = shap.plots.bar(expl, max_display=8)
-        st.pyplot(fig)
+        st.pyplot(plt.gcf())      # show the current figure in Streamlit
+        plt.clf()
