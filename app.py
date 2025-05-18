@@ -65,7 +65,10 @@ if st.button("Predict"):
 
         # 1️⃣ Build a small background sample for KernelExplainer
         background = shap.sample(X_scaled, 50, random_state=0)
-        explainer = shap.KernelExplainer(model.predict_proba, background)
+        def predict_proba_fn(x):
+            # Keras returns a tf‑tensor; convert to numpy
+            return model.predict(x)
+        explainer = shap.KernelExplainer(lambda x: model.predict(x), background)
 
         # 2️⃣ SHAP values (list, one array per class)
         shap_values = explainer.shap_values(X_scaled, nsamples=100)
