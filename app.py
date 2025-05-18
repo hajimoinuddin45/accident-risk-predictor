@@ -63,26 +63,33 @@ if st.button("Predict"):
     # -------------------- SHAP explanation -----------------
     with st.spinner("Calculating local feature explanations…"):
 
-        # 1️⃣ Build a small background sample for KernelExplainer
+        # 1️⃣ Background & explainer
         background = shap.sample(X_scaled, 50, random_state=0)
         explainer  = shap.KernelExplainer(lambda x: model.predict(x), background)
 
         # 2️⃣ SHAP values
         shap_values = explainer.shap_values(X_scaled, nsamples=100)
 
-        # 3️⃣ Pull the SHAP vector we need, binary or multi‑class
+        # 3️⃣ Pull vector for this sample & class (binary vs multi)
         if isinstance(shap_values, list):          # multi‑class
-                sv = shap_values[pred_class][0]        # (n_features,)
+            sv = shap_values[pred_class][0]        # (n_features,)
         else:                                      # binary
             sv = shap_values[0]                    # (n_features,)
 
-        # 4️⃣ Use legacy bar_plot (less picky about types)
-        plt.tight_layout()
-        shap.bar_plot(
-             sv.tolist(),
-            feature_names=feature_names,
-            max_display=8,
-            show=False  # disable SHAP’s own plt.show()
+        # 4️⃣ Build a Series, take top‑8 |value| features
+        sv_series = (
+            pd.Series(sv, index=feature_names)
+            .sort_values(key=lambda x: x.abs(), ascending=False)
+            .head(8)
+            .iloc[::-1]        # flip so biggest on top in barh
         )
-        st.pyplot(plt.gcf())      # show the current figure in Streamlit
-        plt.clf()
+
+        # 5️⃣ Plot with plain Matplotlib
+        fig, ax = plt.subplots()
+        sv_series.plot(kind="barh", ax=ax)
+        ax.set_xlabel("SHAP value (impact on model output)")
+        ax.set_title("Top contributing features")
+        plt.tight_layout()
+
+        st.pyplot(fig)
+        plt.clf()   #
