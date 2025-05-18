@@ -74,19 +74,23 @@ if st.button("Predict"):
         shap_values = explainer.shap_values(X_scaled, nsamples=100)
 
         # 3️⃣ Select the SHAP vector for this sample & class
-        sample_index = 0
-        class_index = pred_class
-        sv = shap_values[class_index][sample_index]   # shape (n_features,)
+        if isinstance(shap_values, list):
+            # multi‑class → pick the array for the predicted class
+            sv = shap_values[pred_class][0]          # (n_features,)
+            base_val = explainer.expected_value[pred_class]
+        else:
+            # binary → shap_values is already the array we want
+            sv = shap_values[0]                      # (n_features,)
+            base_val = explainer.expected_value
 
-        # 4️⃣ Wrap in a SHAP Explanation so bar() knows the labels
+        # 4️⃣ Wrap in Explanation so feature labels survive
         expl = shap.Explanation(
             values=sv,
-            base_values=explainer.expected_value[class_index],
-            data=values[sample_index],
+            base_values=base_val,
+            data=values[0],
             feature_names=feature_names
         )
 
-        # 5️⃣ Plot — shap.plots.bar now needs only (expl, max_display)
+        # 5️⃣ Plot — works for both cases
         fig = shap.plots.bar(expl, max_display=8)
-
         st.pyplot(fig)
